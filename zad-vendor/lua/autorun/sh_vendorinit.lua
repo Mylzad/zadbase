@@ -1,4 +1,4 @@
--- Made by ZeusAKADelta https://steamcommunity.com/id/ZeusAKADelta/
+-- Made by Mylzad https://steamcommunity.com/id/Mylzad/
 AddCSLuaFile()
 
 ZADVendor = ZADVendor or {}
