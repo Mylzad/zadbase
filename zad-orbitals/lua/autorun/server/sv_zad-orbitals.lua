@@ -1,7 +1,7 @@
-AddCSLuaFile("autorun/orbital_shared.lua")
-AddCSLuaFile("autorun/client/orbital_client.lua")
+AddCSLuaFile("autorun/sh_zad-orbitals.lua")
+AddCSLuaFile("autorun/client/cl_zad-orbitals.lua")
 
-include("autorun/orbital_shared.lua")
+include("autorun/sh_zad-orbitals.lua")
 
 ---------------------------------------------------------
 -- NETWORK STRINGS
@@ -11,6 +11,7 @@ util.AddNetworkString("Orbital_Input")
 util.AddNetworkString("Orbital_Clear")
 util.AddNetworkString("Orbital_Update")
 util.AddNetworkString("Orbital_Result")
+util.AddNetworkString("Orbital_Beam")
 
 ---------------------------------------------------------
 -- PLAYER DATA
@@ -65,12 +66,17 @@ end
 ---------------------------------------------------------
 
 local function CodeAccepted(ply, strike)
+
     print(
         "[ORBITAL] "
         .. ply:Nick()
-        .. " entered orbital code for "
+        .. " requested "
         .. strike.name
     )
+
+    -----------------------------------------------------
+    -- Tell client code was accepted
+    -----------------------------------------------------
 
     net.Start("Orbital_Result")
         net.WriteBool(true)
@@ -78,10 +84,48 @@ local function CodeAccepted(ply, strike)
     net.Send(ply)
 
     -----------------------------------------------------
-    -- ACTUAL STRIKE CODE WILL GO HERE
+    -- Remove an existing targeter if somehow present
     -----------------------------------------------------
 
-    hook.Run("OrbitalStrikeActivated", ply, strike)
+    if ply:HasWeapon("weapon_zad_orbitalball") then
+        ply:StripWeapon("weapon_zad_orbitalball")
+    end
+
+    -----------------------------------------------------
+    -- Give targeting grenade
+    -----------------------------------------------------
+
+    local weapon = ply:Give(
+        "weapon_zad_orbitalball"
+    )
+
+    if not IsValid(weapon) then
+        ply:ChatPrint(
+            "Failed to issue orbital targeting grenade."
+        )
+        ClearInput(ply)
+        return
+    end
+
+    -----------------------------------------------------
+    -- Store which orbital strike this grenade represents
+    -----------------------------------------------------
+
+    weapon.OrbitalStrikeID = strike.id
+    weapon.OrbitalStrikeName = strike.name
+    weapon:SetNWString("OrbitalStrikeName", strike.name)
+
+    -----------------------------------------------------
+    -- Force player to hold grenade
+    -----------------------------------------------------
+
+    ply:SelectWeapon(
+        "weapon_zad_orbitalball"
+    )
+
+    -----------------------------------------------------
+    -- Clear code input
+    -----------------------------------------------------
 
     ClearInput(ply)
 end
